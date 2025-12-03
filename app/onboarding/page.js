@@ -1,154 +1,220 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 
-const roles = ['Photographer', 'Videographer', 'Model']
+const CREATOR_ROLES = [
+  'Photographer',
+  'Videographer',
+  'Model',
+  'Content Creator'
+]
 
 export default function OnboardingPage() {
-  const [loading, setLoading] = useState(true)
   const [user, setUser] = useState(null)
-  const [name, setName] = useState('')
-  const [role, setRole] = useState('Photographer')
-  const [location, setLocation] = useState('')
-  const [bio, setBio] = useState('')
-  const [instagram, setInstagram] = useState('')
-  const [portfolio, setPortfolio] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [type, setType] = useState('creator')
   const [status, setStatus] = useState('')
 
+  // creator fields
+  const [name, setName] = useState('')
+  const [roles, setRoles] = useState([])
+  const [city, setCity] = useState('')
+  const [country, setCountry] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [portfolio, setPortfolio] = useState('')
+  const [bio, setBio] = useState('')
+
+  const [rateHour, setRateHour] = useState('')
+  const [rateDay, setRateDay] = useState('')
+  const [packages, setPackages] = useState('')
+
+  const [travelEnabled, setTravelEnabled] = useState(false)
+  const [travelNotes, setTravelNotes] = useState('')
+  const [availability, setAvailability] = useState('')
+
+  // client fields
+  const [clientName, setClientName] = useState('')
+  const [isCompany, setIsCompany] = useState(false)
+  const [companyName, setCompanyName] = useState('')
+  const [clientCity, setClientCity] = useState('')
+  const [clientCountry, setClientCountry] = useState('')
+  const [clientRoles, setClientRoles] = useState([])
+  const [budgetMin, setBudgetMin] = useState('')
+  const [budgetMax, setBudgetMax] = useState('')
+  const [projectDescription, setProjectDescription] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+
   useEffect(() => {
-    const loadUser = async () => {
-      const { data, error } = await supabase.auth.getUser()
-      if (error || !data?.user) {
-        setStatus('You need to log in via email first.')
-        setLoading(false)
-        return
-      }
-      setUser(data.user)
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data?.user) setUser(data.user)
       setLoading(false)
     }
-    loadUser()
+    getUser()
   }, [])
 
-  const handleSave = async (e) => {
-    e.preventDefault()
-    if (!user) {
-      setStatus('No user session. Please sign in again.')
-      return
-    }
-    setStatus('Saving profile...')
-    try {
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
-        name,
-        role,
-        location,
-        bio,
-        instagram,
-        portfolio_url: portfolio,
-      })
-      if (error) {
-        setStatus('Error: ' + error.message)
-      } else {
-        setStatus('Profile saved! 🎉')
-      }
-    } catch (err) {
-      setStatus('Unexpected error: ' + err.message)
+  const toggleRole = (role) => {
+    if (roles.includes(role)) {
+      setRoles(roles.filter(r => r !== role))
+    } else {
+      setRoles([...roles, role])
     }
   }
 
-  if (loading) {
-    return <div className="pt-8 text-sm text-white/70">Checking your session...</div>
+  const toggleClientRole = (role) => {
+    if (clientRoles.includes(role)) {
+      setClientRoles(clientRoles.filter(r => r !== role))
+    } else {
+      setClientRoles([...clientRoles, role])
+    }
+  }
+
+  const saveCreator = async () => {
+    setStatus('Saving creator…')
+
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      name,
+      roles,
+      location_city: city,
+      location_country: country,
+      instagram,
+      portfolio_url: portfolio,
+      bio,
+      rate_hour: rateHour ? Number(rateHour) : null,
+      rate_day: rateDay ? Number(rateDay) : null,
+      packages,
+      travel_enabled: travelEnabled,
+      travel_notes: travelNotes,
+      availability
+    })
+
+    if (error) setStatus(error.message)
+    else setStatus('Creator profile saved ✔️')
+  }
+
+  const saveClient = async () => {
+    setStatus('Saving client…')
+
+    const { error } = await supabase.from('clients').upsert({
+      id: user.id,
+      name: clientName,
+      is_company: isCompany,
+      company_name: isCompany ? companyName : null,
+      location_city: clientCity,
+      location_country: clientCountry,
+      looking_for_roles: clientRoles,
+      budget_min: budgetMin ? Number(budgetMin) : null,
+      budget_max: budgetMax ? Number(budgetMax) : null,
+      project_description: projectDescription,
+      contact_email: contactEmail
+    })
+
+    if (error) setStatus(error.message)
+    else setStatus('Client profile saved ✔️')
+  }
+
+  if (loading) return <div>Loading...</div>
+
+  if (!user) {
+    return <div>Please login first</div>
   }
 
   return (
-    <div className="pt-8 max-w-xl">
-      <h1 className="text-2xl font-semibold">Create your creator profile</h1>
-      <p className="mt-3 text-sm text-white/70">
-        This info will be used to show you in the LinkLens creator search once you hook the front-end up to
-        your Supabase database.
-      </p>
-      {!user && (
-        <p className="mt-3 text-sm text-red-300">
-          No active session found. Go back to the Sign in page and request a magic link.
-        </p>
-      )}
-      {user && (
-        <form onSubmit={handleSave} className="mt-6 space-y-4 text-sm">
+    <div className="p-6 max-w-2xl mx-auto text-white">
+      <h1 className="text-3xl font-bold mb-4">Tell us who you are</h1>
+
+      <div className="flex gap-4 mb-6">
+        <button
+          className={`px-4 py-2 rounded-lg ${type === 'creator' ? 'bg-white text-black' : 'bg-gray-800'}`}
+          onClick={() => setType('creator')}
+        >
+          I’m a Creator
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg ${type === 'client' ? 'bg-white text-black' : 'bg-gray-800'}`}
+          onClick={() => setType('client')}
+        >
+          I’m Hiring
+        </button>
+      </div>
+
+      {type === 'creator' && (
+        <form className="space-y-4">
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" className="input" />
+          <input value={city} onChange={e => setCity(e.target.value)} placeholder="City" className="input" />
+          <input value={country} onChange={e => setCountry(e.target.value)} placeholder="Country" className="input" />
+          <input value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="Instagram @username" className="input" />
+          <input value={portfolio} onChange={e => setPortfolio(e.target.value)} placeholder="Portfolio link" className="input" />
+
+          <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Bio" className="input" />
+
           <div>
-            <label className="block mb-1 text-white/80">Display name</label>
-            <input
-              className="w-full p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name or handle"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-1 text-white/80">Role</label>
-            <select
-              className="w-full p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              {roles.map((r) => (
-                <option key={r} value={r}>{r}</option>
+            <p className="text-sm mb-2">Roles</p>
+            <div className="flex gap-2 flex-wrap">
+              {CREATOR_ROLES.map(role => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => toggleRole(role)}
+                  className={`px-3 py-1 rounded-full border ${roles.includes(role) ? 'bg-white text-black' : 'border-gray-500'}`}
+                >
+                  {role}
+                </button>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="block mb-1 text-white/80">Location</label>
-            <input
-              className="w-full p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, Country"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 text-white/80">Short bio</label>
-            <textarea
-              className="w-full p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-              rows={4}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="What do you shoot, what do you love working on?"
-            />
-          </div>
-          <div>
-            <label className="block mb-1 text-white/80">Instagram handle</label>
-            <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">@</span>
-              <input
-                className="flex-1 p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="your.handle"
-              />
             </div>
           </div>
-          <div>
-            <label className="block mb-1 text-white/80">Portfolio URL</label>
-            <input
-              className="w-full p-2.5 rounded-md bg-black/30 border border-white/15 outline-none focus:ring-2 focus:ring-white/40"
-              value={portfolio}
-              onChange={(e) => setPortfolio(e.target.value)}
-              placeholder="Link to your site, drive, notion, etc."
-            />
+
+          <input type="number" value={rateHour} onChange={e => setRateHour(e.target.value)} placeholder="Hourly Rate $" className="input" />
+          <input type="number" value={rateDay} onChange={e => setRateDay(e.target.value)} placeholder="Day Rate $" className="input" />
+          <textarea value={packages} onChange={e => setPackages(e.target.value)} placeholder="Packages" className="input" />
+
+          <div className="flex items-center gap-3">
+            <input type="checkbox" checked={travelEnabled} onChange={() => setTravelEnabled(!travelEnabled)} />
+            <label>I travel</label>
           </div>
-          <button
-            type="submit"
-            className="w-full p-2.5 rounded-md bg-white text-black font-medium hover:bg-white/90 transition"
-          >
-            Save profile
+
+          {travelEnabled && (
+            <input value={travelNotes} onChange={e => setTravelNotes(e.target.value)} placeholder="Travel notes" className="input" />
+          )}
+
+          <input value={availability} onChange={e => setAvailability(e.target.value)} placeholder="Availability" className="input" />
+
+          <button type="button" onClick={saveCreator} className="bg-white text-black px-4 py-2 rounded-lg">
+            Save Creator Profile
           </button>
         </form>
       )}
-      <div className="mt-3 text-xs text-white/70 min-h-[1.25rem]">{status}</div>
-      <p className="mt-4 text-xs text-white/50">
-        For this to work end-to-end, make sure you have a <code>profiles</code> table in Supabase with an <code>id</code> column
-        that matches <code>auth.users.id</code>, plus the other fields used here. See README_SUPABASE_STEP_BY_STEP.md.
-      </p>
+
+      {type === 'client' && (
+        <form className="space-y-4">
+          <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Your name" className="input" />
+
+          <div className="flex gap-3">
+            <input type="checkbox" checked={isCompany} onChange={() => setIsCompany(!isCompany)} />
+            <label>I am a company</label>
+          </div>
+
+          {isCompany && (
+            <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Company name" className="input" />
+          )}
+
+          <input value={clientCity} onChange={e => setClientCity(e.target.value)} placeholder="City" className="input" />
+          <input value={clientCountry} onChange={e => setClientCountry(e.target.value)} placeholder="Country" className="input" />
+
+          <textarea value={projectDescription} onChange={e => setProjectDescription(e.target.value)} placeholder="Project details" className="input" />
+
+          <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Contact email" className="input" />
+
+          <button type="button" onClick={saveClient} className="bg-white text-black px-4 py-2 rounded-lg">
+            Save Client Profile
+          </button>
+        </form>
+      )}
+
+      <p className="mt-4 text-sm">{status}</p>
     </div>
   )
 }
+
