@@ -102,5 +102,61 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-2xl mx-auto p-8 text-white">
 
-      <h1 className="text-4xl
+      <h1 className="text-4xl font-bold mb-6">Tell us who you are</h1>
 
+      <div className="flex gap-6 mb-10">
+        <button
+          className={`px-6 py-2 rounded-lg ${type === 'creator' ? 'bg-white text-black' : 'bg-gray-700'}`}
+          onClick={() => setType('creator')}
+        >
+          I’m a Creator
+        </button>
+
+        <button
+          className={`px-6 py-2 rounded-lg ${type === 'client' ? 'bg-white text-black' : 'bg-gray-700'}`}
+          onClick={() => setType('client')}
+        >
+          I’m Hiring
+        </button>
+      </div>
+
+      {/* ───────── CREATOR FORM ───────── */}
+      {type === 'creator' && (
+        <div className="space-y-4">
+
+          <input className="input" placeholder="Your Name" onChange={(e) => setName(e.target.value)} />
+          <input className="input" placeholder="Primary Role (Photographer, Model…)" onChange={(e) => setRole(e.target.value)} />
+          <input className="input" placeholder="City, Country" onChange={(e) => setLocation(e.target.value)} />
+          <textarea className="input" placeholder="Bio" onChange={(e) => setBio(e.target.value)} />
+          <input className="input" placeholder="Instagram @" onChange={(e) => setInstagram(e.target.value)} />
+          <input className="input" placeholder="Portfolio link" onChange={(e) => setPortfolio(e.target.value)} />
+          <input className="input" placeholder="Availability" onChange={(e) => setAvailability(e.target.value)} />
+          <textarea className="input" placeholder="Packages / Rates" onChange={(e) => setPackages(e.target.value)} />
+
+          <label className="flex gap-2 items-center">
+            <input type="checkbox" onChange={(e) => setTravel(e.target.checked)} />
+            I travel
+          </label>
+
+          <textarea className="input" placeholder="Travel notes" onChange={(e) => setTravelNotes(e.target.value)} />
+
+          <button onClick={saveProfile} className="button-primary">Save Creator Profile</button>
+        </div>
+      )}
+
+      {/* ───────── CLIENT FORM ───────── */}
+      {type === 'client' && (
+        <div className="space-y-4">
+
+          <input className="input" placeholder="Your Name" onChange={(e) => setName(e.target.value)} />
+          <textarea className="input" placeholder="What are you looking for?" onChange={(e) => setRolesNeeded(e.target.value)} />
+          <input className="input" placeholder="City" onChange={(e) => setCity(e.target.value)} />
+          <input className="input" placeholder="Budget" onChange={(e) => setBudget(e.target.value)} />
+          <textarea className="input" placeholder="Project description" onChange={(e) => setBio(e.target.value)} />
+
+          <button onClick={saveClient} className="button-primary">Save Client Profile</button>
+        </div>
+      )}
+    </div>
+  )
+}
