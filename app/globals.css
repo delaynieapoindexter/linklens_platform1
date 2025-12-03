@@ -5,3 +5,19 @@
 body {
   @apply antialiased;
 }
+.input {
+  width: 100%;
+  background: #f3f3f3;
+  color: black;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.button-primary {
+  width: 100%;
+  background: white;
+  color: black;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: bold;
+}
