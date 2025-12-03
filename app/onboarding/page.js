@@ -1,162 +1,176 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabaseClient'
+"use client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/navigation";
 
 export default function OnboardingPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // auth
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  // FORM FIELDS
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [location, setLocation] = useState("");
+  const [bio, setBio] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [portfolio_url, setPortfolioUrl] = useState("");
+  const [availability, setAvailability] = useState("");
+  const [travel, setTravel] = useState(false);
+  const [packages, setPackages] = useState("");
+  const [travel_notes, setTravelNotes] = useState("");
 
-  // profile fields
-  const [type, setType] = useState('creator')
-  const [name, setName] = useState('')
-  const [role, setRole] = useState('')
-  const [location, setLocation] = useState('')
-  const [bio, setBio] = useState('')
-  const [instagram, setInstagram] = useState('')
-  const [portfolio, setPortfolio] = useState('')
-  const [availability, setAvailability] = useState('')
-  const [travel, setTravel] = useState(false)
-  const [packages, setPackages] = useState('')
-  const [travelNotes, setTravelNotes] = useState('')
-
-  // client fields
-  const [budget, setBudget] = useState('')
-  const [city, setCity] = useState('')
-  const [rolesNeeded, setRolesNeeded] = useState('')
-
+  //--------------------------------------------------------------
+  // GET LOGGED IN USER
+  //--------------------------------------------------------------
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      setUser(data.user)
-      setLoading(false)
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser();
+      if (!data?.user) return;
+      setUser(data.user);
     }
-    getUser()
-  }, [])
+    loadUser();
+  }, []);
 
-  const saveProfile = async () => {
-    if (!user) return alert("Please log in first.")
+  if (!user) return <div className="p-8 text-white">Please log in first.</div>;
 
-    const profileData = {
-      user_id: user.id,
-      name,
-      role,
-      location,
-      bio,
-      instagram,
-      portfolio_url: portfolio,
-      availability,
-      travel,
-      packages,
-      travel_notes: travelNotes,
+  //--------------------------------------------------------------
+  // SAVE PROFILE TO SUPABASE
+  //--------------------------------------------------------------
+  async function saveCreatorProfile() {
+    setLoading(true);
+    try {
+      const profileData = {
+        user_id: user.id,
+        name,
+        role,
+        location,
+        bio,
+        instagram,
+        portfolio_url,
+        availability,
+        travel,
+        packages,
+        travel_notes,
+      };
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .insert(profileData)
+        .onConflict("user_id") // 🔥 THIS IS THE FIX
+        .merge();
+
+      if (error) {
+        console.error("Supabase Error:", error);
+        alert("❌ Something went wrong saving your profile.");
+      } else {
+        alert("✅ Profile saved successfully!");
+        router.push("/");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Unexpected error. Check console.");
+    } finally {
+      setLoading(false);
     }
-
-    // Save or update
-    const { error } = await supabase
-      .from('profiles')
-      .upsert(profileData, { onConflict: 'user_id' })
-
-    if (error) {
-      console.error(error)
-      alert("Something went wrong")
-      return
-    }
-
-    alert("Profile saved!")
-    router.push('/home')
   }
 
-  const saveClient = async () => {
-    if (!user) return alert("Please log in first.")
-
-    const payload = {
-      creator_id: null,
-      client_id: user.id,
-      client_name: name,
-      client_email: user.email,
-      requested_roles: rolesNeeded,
-      message: bio,
-      budget_min: budget,
-      location_city: city,
-    }
-
-    const { error } = await supabase.from('inquiries').insert(payload)
-
-    if (error) {
-      console.error(error)
-      alert("Something went wrong")
-      return
-    }
-
-    alert("Client profile saved!")
-    router.push('/home')
-  }
-
-  if (loading) return <div className="text-white p-8">Loading...</div>
-  if (!user) return <div className="text-white p-8">You must sign in first.</div>
-
+  //--------------------------------------------------------------
+  // UI
+  //--------------------------------------------------------------
   return (
-    <div className="max-w-2xl mx-auto p-8 text-white">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center py-10 px-4">
+      <div className="max-w-2xl w-full space-y-4">
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Tell us who you are
+        </h1>
 
-      <h1 className="text-4xl font-bold mb-6">Tell us who you are</h1>
+        <input
+          className="input w-full"
+          placeholder="Name"
+          onChange={(e) => setName(e.target.value)}
+        />
 
-      <div className="flex gap-6 mb-10">
+        <input
+          className="input w-full"
+          placeholder="Role (Photographer, Model, etc)"
+          onChange={(e) => setRole(e.target.value)}
+        />
+
+        <input
+          className="input w-full"
+          placeholder="Location (City, Country)"
+          onChange={(e) => setLocation(e.target.value)}
+        />
+
+        <textarea
+          className="input w-full"
+          placeholder="Bio"
+          onChange={(e) => setBio(e.target.value)}
+        />
+
+        <input
+          className="input w-full"
+          placeholder="@instagram"
+          onChange={(e) => setInstagram(e.target.value)}
+        />
+
+        <input
+          className="input w-full"
+          placeholder="Portfolio Link"
+          onChange={(e) => setPortfolioUrl(e.target.value)}
+        />
+
+        <input
+          className="input w-full"
+          placeholder="Availability (Weekends, Full time, etc)"
+          onChange={(e) => setAvailability(e.target.value)}
+        />
+
+        <div className="flex gap-2 items-center">
+          <input
+            type="checkbox"
+            checked={travel}
+            onChange={(e) => setTravel(e.target.checked)}
+          />
+          <span>I travel</span>
+        </div>
+
+        <textarea
+          className="input w-full"
+          placeholder="Travel notes (cities, flexible, etc)"
+          onChange={(e) => setTravelNotes(e.target.value)}
+        />
+
+        <textarea
+          className="input w-full"
+          placeholder="Packages / Pricing"
+          onChange={(e) => setPackages(e.target.value)}
+        />
+
         <button
-          className={`px-6 py-2 rounded-lg ${type === 'creator' ? 'bg-white text-black' : 'bg-gray-700'}`}
-          onClick={() => setType('creator')}
+          disabled={loading}
+          onClick={saveCreatorProfile}
+          className="bg-white text-black w-full py-3 rounded-md font-semibold mt-4"
         >
-          I’m a Creator
-        </button>
-
-        <button
-          className={`px-6 py-2 rounded-lg ${type === 'client' ? 'bg-white text-black' : 'bg-gray-700'}`}
-          onClick={() => setType('client')}
-        >
-          I’m Hiring
+          {loading ? "Saving..." : "Save Creator Profile"}
         </button>
       </div>
-
-      {/* ───────── CREATOR FORM ───────── */}
-      {type === 'creator' && (
-        <div className="space-y-4">
-
-          <input className="input" placeholder="Your Name" onChange={(e) => setName(e.target.value)} />
-          <input className="input" placeholder="Primary Role (Photographer, Model…)" onChange={(e) => setRole(e.target.value)} />
-          <input className="input" placeholder="City, Country" onChange={(e) => setLocation(e.target.value)} />
-          <textarea className="input" placeholder="Bio" onChange={(e) => setBio(e.target.value)} />
-          <input className="input" placeholder="Instagram @" onChange={(e) => setInstagram(e.target.value)} />
-          <input className="input" placeholder="Portfolio link" onChange={(e) => setPortfolio(e.target.value)} />
-          <input className="input" placeholder="Availability" onChange={(e) => setAvailability(e.target.value)} />
-          <textarea className="input" placeholder="Packages / Rates" onChange={(e) => setPackages(e.target.value)} />
-
-          <label className="flex gap-2 items-center">
-            <input type="checkbox" onChange={(e) => setTravel(e.target.checked)} />
-            I travel
-          </label>
-
-          <textarea className="input" placeholder="Travel notes" onChange={(e) => setTravelNotes(e.target.value)} />
-
-          <button onClick={saveProfile} className="button-primary">Save Creator Profile</button>
-        </div>
-      )}
-
-      {/* ───────── CLIENT FORM ───────── */}
-      {type === 'client' && (
-        <div className="space-y-4">
-
-          <input className="input" placeholder="Your Name" onChange={(e) => setName(e.target.value)} />
-          <textarea className="input" placeholder="What are you looking for?" onChange={(e) => setRolesNeeded(e.target.value)} />
-          <input className="input" placeholder="City" onChange={(e) => setCity(e.target.value)} />
-          <input className="input" placeholder="Budget" onChange={(e) => setBudget(e.target.value)} />
-          <textarea className="input" placeholder="Project description" onChange={(e) => setBio(e.target.value)} />
-
-          <button onClick={saveClient} className="button-primary">Save Client Profile</button>
-        </div>
-      )}
     </div>
-  )
+  );
 }
+
+/* ---- Reusable input styling ---- */
+const inputStyles = `
+input.input, textarea.input {
+  background: #121212;
+  border: 1px solid #333;
+  padding: 14px;
+  border-radius: 8px;
+  width: 100%;
+}
+input.input:focus, textarea.input:focus {
+  border: 1px solid #888;
+}
+`;
+
